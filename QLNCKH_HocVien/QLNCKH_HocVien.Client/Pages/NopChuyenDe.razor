@@ -1,0 +1,176 @@
+﻿@page "/nopchuyende"
+@rendermode InteractiveServer
+@using QLNCKH_HocVien.Client.Models
+@using QLNCKH_HocVien.Client.Services
+@inject NopSanPhamService NopService
+
+<h3 class="text-warning fw-bold mb-4"><i class="bi bi-box-seam"></i> NỘP SẢN PHẨM CHUYÊN ĐỀ</h3>
+
+@if (!string.IsNullOrEmpty(msgError))
+{
+    <div class="alert alert-danger">@msgError</div>
+}
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark fw-bold">Thông tin nộp</div>
+            <div class="card-body">
+                <EditForm Model="@baiNop" OnValidSubmit="Save">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label">Chọn Chuyên đề (*)</label>
+                        <InputSelect @bind-Value="baiNop.IdChuyenDe" class="form-select">
+                            <option value="0">-- Chọn Chuyên đề --</option>
+                            @foreach (var cd in dsChuyenDe)
+                            {
+                                <option value="@cd.Id">@cd.MaSoCD - @cd.TenChuyenDe</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    @if (baiNop.IdChuyenDe > 0)
+                    {
+                        var cdChon = dsChuyenDe.FirstOrDefault(x => x.Id == baiNop.IdChuyenDe);
+                        var svThucHien = dsSinhVien.FirstOrDefault(x => x.Id == cdChon?.IdHocVien);
+
+                        <div class="alert alert-secondary p-2 small">
+                            <strong>Tên CĐ:</strong> @cdChon?.TenChuyenDe <br />
+                            <strong>Người nộp (Thành viên):</strong> <span class="text-primary fw-bold">@svThucHien?.HoTen</span> <br />
+                            <strong>Lớp:</strong> @svThucHien?.Lop
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">Trạng thái nộp (*)</label>
+                        <InputSelect @bind-Value="baiNop.TrangThai" class="form-select">
+                            <option value="@TrangThaiNop.NopBanMem">Nộp bản mềm</option>
+                            <option value="@TrangThaiNop.NopBanCung">Nộp bản cứng</option>
+                            <option value="@TrangThaiNop.NopSauChinhSua">Nộp sau chỉnh sửa</option>
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Ghi chú / Link sản phẩm</label>
+                        <InputTextArea @bind-Value="baiNop.GhiChu" class="form-control" rows="2" />
+                    </div>
+
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">Xác Nhận Nộp</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header">Lịch sử nộp sản phẩm</div>
+            <div class="card-body">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã CĐ</th>
+                            <th>Tên Chuyên Đề</th>
+                            <th>Người nộp</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày nộp</th>
+                            <th>Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in dsDaNop)
+                        {
+                            var cd = dsChuyenDe.FirstOrDefault(x => x.Id == item.IdChuyenDe);
+                            var sv = dsSinhVien.FirstOrDefault(x => x.Id == cd?.IdHocVien);
+
+                            <tr>
+                                <td class="fw-bold">@cd?.MaSoCD</td>
+                                <td>@cd?.TenChuyenDe</td>
+                                <td>@sv?.HoTen</td>
+                                <td>
+                                    @switch (item.TrangThai)
+                                    {
+                                        case TrangThaiNop.NopBanMem:
+                                            <span class="badge bg-primary">Bản mềm</span>
+                                            break;
+                                        case TrangThaiNop.NopBanCung:
+                                            <span class="badge bg-success">Bản cứng</span>
+                                            break;
+                                        case TrangThaiNop.NopSauChinhSua:
+                                            <span class="badge bg-warning text-dark">Đã sửa</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>@item.NgayNop.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(item.Id)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private NopSanPham baiNop = new();
+    private List<NopSanPham> dsDaNop = new();
+    private List<ChuyenDeNCKH> dsChuyenDe = new();
+    private List<SinhVien> dsSinhVien = new();
+    private string? msgError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var t1 = NopService.LayDsChuyenDe();
+            var t2 = NopService.LayDsSinhVien();
+            var t3 = NopService.LayDsNop();
+
+            await Task.WhenAll(t1, t2, t3);
+            dsChuyenDe = t1.Result;
+            dsSinhVien = t2.Result;
+            dsDaNop = t3.Result;
+        }
+        catch (Exception ex)
+        {
+            msgError = "Lỗi: " + ex.Message;
+        }
+    }
+
+    private async Task Save()
+    {
+        // Validate thủ công: Phải chọn chuyên đề
+        if (baiNop.IdChuyenDe == 0)
+        {
+            msgError = "Vui lòng chọn Chuyên đề cần nộp!";
+            return;
+        }
+
+        msgError = null;
+        try
+        {
+            baiNop.NgayNop = DateTime.Now;
+            await NopService.NopBai(baiNop);
+            baiNop = new NopSanPham(); // Reset
+            dsDaNop = await NopService.LayDsNop(); // Refresh
+        }
+        catch (Exception ex)
+        {
+            msgError = ex.Message;
+        }
+    }
+
+    private async Task Delete(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "Bạn có chắc muốn xóa lịch sử nộp này?")) return;
+        await NopService.XoaNop(id);
+        dsDaNop = await NopService.LayDsNop();
+    }
+
+    [Inject] IJSRuntime JS { get; set; }
+}

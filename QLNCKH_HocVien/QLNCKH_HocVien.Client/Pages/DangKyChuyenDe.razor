@@ -1,0 +1,180 @@
+﻿@page "/dangkychuyende"
+@rendermode InteractiveServer
+@using QLNCKH_HocVien.Client.Models
+@using QLNCKH_HocVien.Client.Services
+@inject ChuyenDeNCKHService CdService
+
+<h3 class="text-info fw-bold mb-4"><i class="bi bi-journal-text"></i> ĐĂNG KÝ CHUYÊN ĐỀ NCKH</h3>
+
+@if (!string.IsNullOrEmpty(msgError))
+{
+    <div class="alert alert-danger">@msgError</div>
+}
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">Thông tin đăng ký</div>
+            <div class="card-body">
+                <EditForm Model="@cd" OnValidSubmit="Save">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label">Mã chuyên đề (*)</label>
+                        <InputText @bind-Value="cd.MaSoCD" class="form-control" placeholder="VD: CĐ-2024-01" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tên chuyên đề (*)</label>
+                        <InputTextArea @bind-Value="cd.TenChuyenDe" class="form-control" rows="3" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Học viên thực hiện (*)</label>
+                        <InputSelect @bind-Value="cd.IdHocVien" class="form-select">
+                            <option value="">-- Chọn Học viên --</option>
+                            @foreach (var sv in dsSinhVien)
+                            {
+                                <option value="@sv.Id">@sv.MaSV - @sv.HoTen</option>
+                            }
+                        </InputSelect>
+                        @if (cd.IdHocVien != null)
+                        {
+                            var svChon = dsSinhVien.FirstOrDefault(x => x.Id == cd.IdHocVien);
+                            <div class="mt-2 p-2 bg-light rounded small border">
+                                <strong>Thông tin:</strong><br />
+                                Lớp: @svChon?.Lop <br />
+                                Ngành: @(dsNganh.FirstOrDefault(n => n.IdLVNganh == svChon?.IdNganh)?.TenLVNganh ?? "Chưa cập nhật")
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Lĩnh vực nghiên cứu</label>
+                        <InputSelect @bind-Value="cd.IdLinhVuc" class="form-select">
+                            <option value="">-- Chọn Lĩnh vực --</option>
+                            @foreach (var lv in dsLinhVuc)
+                            {
+                                <option value="@lv.Id">@lv.Ten</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <button type="submit" class="btn btn-info text-white w-100"><i class="bi bi-plus-circle"></i> Đăng Ký</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header">Danh sách chuyên đề đã đăng ký</div>
+            <div class="card-body">
+                <table class="table table-bordered table-striped align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã CĐ</th>
+                            <th>Tên Chuyên đề</th>
+                            <th style="width: 30%">Học viên thực hiện</th>
+                            <th>Lĩnh vực</th>
+                            <th>Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in dsChuyenDe)
+                        {
+                            // Lấy thông tin sinh viên từ ID
+                            var sv = dsSinhVien.FirstOrDefault(s => s.Id == item.IdHocVien);
+                            var tenNganh = dsNganh.FirstOrDefault(n => n.IdLVNganh == sv?.IdNganh)?.TenLVNganh;
+                            var tenLinhVuc = dsLinhVuc.FirstOrDefault(l => l.Id == item.IdLinhVuc)?.Ten;
+
+                            <tr>
+                                <td class="fw-bold text-primary">@item.MaSoCD</td>
+                                <td>@item.TenChuyenDe</td>
+                                <td>
+                                    @if (sv != null)
+                                    {
+                                        <span class="fw-bold">@sv.HoTen</span>
+                                
+                                        <br />
+                                        <small class="text-muted">
+                                            @sv.Lop - @tenNganh
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-danger">Không tìm thấy SV</span>
+                                    }
+                                </td>
+                                <td>@tenLinhVuc</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => Delete(item.Id)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ChuyenDeNCKH cd = new();
+    private List<ChuyenDeNCKH> dsChuyenDe = new();
+    private string? msgError;
+
+    // Danh sách tham chiếu
+    private List<SinhVien> dsSinhVien = new();
+    private List<LinhVucDeTai> dsLinhVuc = new();
+    private List<Nganh> dsNganh = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var t1 = CdService.LayDsSinhVien();
+            var t2 = CdService.LayDsLinhVuc();
+            var t3 = CdService.LayDsNganh();
+            var t4 = CdService.LayDsChuyenDe();
+
+            await Task.WhenAll(t1, t2, t3, t4);
+
+            dsSinhVien = t1.Result;
+            dsLinhVuc = t2.Result;
+            dsNganh = t3.Result;
+            dsChuyenDe = t4.Result;
+        }
+        catch (Exception ex)
+        {
+            msgError = "Lỗi tải dữ liệu: " + ex.Message;
+        }
+    }
+
+    private async Task Save()
+    {
+        msgError = null;
+        try
+        {
+            await CdService.ThemChuyenDe(cd);
+            cd = new ChuyenDeNCKH(); // Reset form
+            dsChuyenDe = await CdService.LayDsChuyenDe(); // Refresh list
+        }
+        catch (Exception ex)
+        {
+            msgError = ex.Message;
+        }
+    }
+
+    private async Task Delete(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "Bạn có chắc muốn xóa chuyên đề này?")) return;
+
+        await CdService.XoaChuyenDe(id);
+        dsChuyenDe = await CdService.LayDsChuyenDe();
+    }
+
+    [Inject] IJSRuntime JS { get; set; }
+}

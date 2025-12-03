@@ -1,0 +1,113 @@
+﻿@page "/xepgiai"
+@rendermode InteractiveServer
+@using QLNCKH_HocVien.Client.Models
+@using QLNCKH_HocVien.Client.Services
+@inject XepGiaiService XgService
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="text-danger fw-bold"><i class="bi bi-trophy-fill"></i> BẢNG XẾP HẠNG & TRAO GIẢI</h3>
+    <button class="btn btn-warning fw-bold" @onclick="XuLyXepGiai">
+        <i class="bi bi-arrow-repeat"></i> Tổng hợp & Xếp giải
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(msgError)) { <div class="alert alert-danger">@msgError</div> }
+
+<div class="card shadow border-warning">
+    <div class="card-body p-0">
+        <table class="table table-hover table-striped mb-0 align-middle">
+            <thead class="bg-warning text-dark">
+                <tr>
+                    <th>Hạng</th>
+                    <th>Giải Thưởng</th>
+                    <th>Mã CĐ</th>
+                    <th>Tên Chuyên Đề</th>
+                    <th>Điểm TB</th>
+                    <th>Học viên thực hiện</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in dsKetQua)
+                {
+                    var cd = dsChuyenDe.FirstOrDefault(x => x.Id == item.IdChuyenDe);
+                    var sv = dsSinhVien.FirstOrDefault(s => s.Id == cd?.IdHocVien);
+                    var nganh = dsNganh.FirstOrDefault(n => n.IdLVNganh == sv?.IdNganh)?.TenLVNganh;
+
+                    <tr class="@GetRowClass(item.TenGiai)">
+                        <td class="fw-bold text-center">#@item.XepHang</td>
+                        <td>
+                            @if(item.TenGiai.Contains("Nhất")) { <i class="bi bi-star-fill text-warning"></i> }
+                            <span class="fw-bold">@item.TenGiai</span>
+                        </td>
+                        <td>@cd?.MaSoCD</td>
+                        <td>@cd?.TenChuyenDe</td>
+                        <td class="fw-bold text-danger text-center">@item.DiemTrungBinh</td>
+                        <td>
+                            @if(sv != null)
+                            {
+                                <strong>@sv.HoTen</strong> <br/>
+                                <small class="text-muted">@sv.Lop - @nganh</small>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<XepGiai> dsKetQua = new();
+    private List<ChuyenDeNCKH> dsChuyenDe = new();
+    private List<SinhVien> dsSinhVien = new();
+    private List<Nganh> dsNganh = new();
+    private string? msgError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            var t1 = XgService.LayKetQua();
+            var t2 = XgService.LayDsChuyenDe();
+            var t3 = XgService.LayDsSinhVien();
+            var t4 = XgService.LayDsNganh();
+
+            await Task.WhenAll(t1, t2, t3, t4);
+            dsKetQua = t1.Result;
+            dsChuyenDe = t2.Result;
+            dsSinhVien = t3.Result;
+            dsNganh = t4.Result;
+        }
+        catch(Exception ex)
+        {
+            msgError = ex.Message;
+        }
+    }
+
+    private async Task XuLyXepGiai()
+    {
+        try
+        {
+            await XgService.TuDongXepGiai();
+            await LoadData(); // Refresh lại bảng sau khi tính toán
+        }
+        catch(Exception ex)
+        {
+            msgError = "Lỗi tính toán: " + ex.Message;
+        }
+    }
+
+    // Helper tạo màu nền cho từng loại giải
+    private string GetRowClass(string tenGiai)
+    {
+        if (tenGiai.Contains("Nhất")) return "table-warning"; // Vàng
+        if (tenGiai.Contains("Nhì")) return "table-primary"; // Xanh dương nhạt
+        if (tenGiai.Contains("Ba")) return "table-success"; // Xanh lá
+        return "";
+    }
+}

@@ -1,0 +1,286 @@
+﻿@page "/quanlygiaovien"
+@rendermode InteractiveServer
+@using QLNCKH_HocVien.Client.Models
+@using QLNCKH_HocVien.Client.Services
+@inject GiaoVienService GvService
+
+<h3 class="text-primary fw-bold mb-3"><i class="bi bi-person-video3"></i> QUẢN LÝ THÔNG TIN GIÁO VIÊN</h3>
+
+@if (!string.IsNullOrEmpty(msgError))
+{
+    <div class="alert alert-danger">@msgError</div>
+}
+
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-primary text-white">Nhập thông tin hồ sơ</div>
+    <div class="card-body">
+        <EditForm Model="@gv" OnValidSubmit="Save">
+            <DataAnnotationsValidator/>
+
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Mã số CB (*)</label>
+                    <InputText @bind-Value="gv.MaSoCB" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Họ Tên (*)</label>
+                    <InputText @bind-Value="gv.HoTen" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Giới tính</label>
+                    <InputSelect @bind-Value="gv.GioiTinh" class="form-select">
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </InputSelect>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Ngày sinh</label>
+                    <InputDate @bind-Value="gv.NgaySinh" class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Quê quán (Tỉnh)</label>
+                    <InputSelect @bind-Value="gv.IdTinh" class="form-select">
+                        <option value="">-- Chọn --</option>
+                        @foreach (var i in lsTinh)
+                        {
+                            <option value="@i.IdTinh">@i.TenTinh</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Dân tộc</label>
+                    <InputSelect @bind-Value="gv.IdDanToc" class="form-select">
+                        <option value="">-- Chọn --</option>
+                        @foreach (var i in lsDanToc)
+                        {
+                            <option value="@i.IdDanToc">@i.TenDanToc</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tôn giáo</label>
+                    <InputSelect @bind-Value="gv.IdTonGiao" class="form-select">
+                        <option value="">-- Chọn --</option>
+                        @foreach (var i in lsTonGiao)
+                        {
+                            <option value="@i.IdTonGiao">@i.TenTonGiao</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">SĐT</label>
+                    <InputText @bind-Value="gv.SoDienThoai" class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">TĐ Chuyên môn</label>
+                    <InputSelect @bind-Value="gv.IdTrinhDoChuyenMon" class="form-select">
+                        <option value="">-- Chọn --</option>
+                        @foreach (var i in lsTDCM)
+                        {
+                            <option value="@i.Id">@i.Ten</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">TĐ Chính trị (LLCT)</label>
+                    <InputSelect @bind-Value="gv.IdTrinhDoLLCT" class="form-select">
+                        <option value="">-- Chọn --</option>
+                        @foreach (var i in lsTDLLCT)
+                        {
+                            <option value="@i.Id">@i.Ten</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Đơn vị công tác</label>
+                    <InputSelect @bind-Value="gv.IdDonViCongTac" class="form-select">
+                        <option value="">-- Chọn Đơn vị --</option>
+                        @foreach (var i in lsToChuc)
+                        {
+                            <option value="@i.Id">@i.Ten</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Chức vụ</label>
+                    <InputSelect @bind-Value="gv.IdChucVu" class="form-select">
+                        <option value="">-- Chọn --</option>
+                        @foreach (var i in lsChucVu)
+                        {
+                            <option value="@i.IdChucVu">@i.TenChucVu</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Cấp bậc</label>
+                    <InputSelect @bind-Value="gv.IdCapBac" class="form-select">
+                        <option value="">-- Chọn --</option>
+                        @foreach (var i in lsCapBac)
+                        {
+                            <option value="@i.Id">@i.Ten</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Hệ số lương</label>
+                    <InputNumber @bind-Value="gv.HeSoLuong" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Lĩnh vực chuyên môn</label>
+                    <InputText @bind-Value="gv.LinhVuc" class="form-control" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Chức danh</label>
+                    <InputSelect @bind-Value="gv.IdChucDanh" class="form-select">
+                        <option value="">-- Chọn --</option>
+                        @foreach (var i in lsChucDanh)
+                        {
+                            <option value="@i.Id">@i.Ten</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Học hàm</label>
+                    <InputSelect @bind-Value="gv.IdHocHam" class="form-select">
+                        <option value="">-- Chọn --</option>
+                        @foreach (var i in lsHocHam)
+                        {
+                            <option value="@i.Id">@i.Ten</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Học vị</label>
+                    <InputSelect @bind-Value="gv.IdHocVi" class="form-select">
+                        <option value="">-- Chọn --</option>
+                        @foreach (var i in lsHocVi)
+                        {
+                            <option value="@i.Id">@i.Ten</option>
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+
+            <div class="mt-3 text-end">
+                <button type="submit" class="btn btn-success"><i class="bi bi-floppy"></i> Lưu Hồ Sơ</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Mã CB</th>
+                    <th>Họ Tên</th>
+                    <th>Ngày sinh</th>
+                    <th>Đơn vị</th>
+                    <th>Chức danh/Học vị</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var i in listGiaoVien)
+                {
+                    <tr>
+                        <td>@i.MaSoCB</td>
+                        <td>@i.HoTen</td>
+                        <td>@(i.NgaySinh?.ToString("dd/MM/yyyy"))</td>
+                        <td>
+                            @(lsToChuc.FirstOrDefault(x => x.Id == i.IdDonViCongTac)?.Ten)
+                        </td>
+                        <td>
+                            @(lsHocHam.FirstOrDefault(x => x.Id == i.IdHocHam)?.Ten)
+                            @(lsHocVi.FirstOrDefault(x => x.Id == i.IdHocVi)?.Ten)
+                        </td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" @onclick="() => Del(i.Id)">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private GiaoVien gv = new();
+    private List<GiaoVien> listGiaoVien = new();
+    private string? msgError;
+
+    // Các list danh mục
+    private List<Tinh> lsTinh = new();
+    private List<DanToc> lsDanToc = new();
+    private List<TonGiao> lsTonGiao = new();
+    private List<TrinhDoChuyenMon> lsTDCM = new();
+    private List<TrinhDoLLCT> lsTDLLCT = new();
+    private List<ToChuc> lsToChuc = new();
+    private List<ChucVu> lsChucVu = new();
+    private List<CapBac> lsCapBac = new();
+    private List<ChucDanh> lsChucDanh = new();
+    private List<HocHam> lsHocHam = new();
+    private List<HocVi> lsHocVi = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Load song song tất cả danh mục cho nhanh
+            var tasks = new Task[]
+            {
+                LoadCatalog(async () => lsTinh = await GvService.GetTinh()),
+                LoadCatalog(async () => lsDanToc = await GvService.GetDanToc()),
+                LoadCatalog(async () => lsTonGiao = await GvService.GetTonGiao()),
+                LoadCatalog(async () => lsTDCM = await GvService.GetTDCM()),
+                LoadCatalog(async () => lsTDLLCT = await GvService.GetTDLLCT()),
+                LoadCatalog(async () => lsToChuc = await GvService.GetToChuc()),
+                LoadCatalog(async () => lsChucVu = await GvService.GetChucVu()),
+                LoadCatalog(async () => lsCapBac = await GvService.GetCapBac()),
+                LoadCatalog(async () => lsChucDanh = await GvService.GetChucDanh()),
+                LoadCatalog(async () => lsHocHam = await GvService.GetHocHam()),
+                LoadCatalog(async () => lsHocVi = await GvService.GetHocVi()),
+                LoadList()
+            };
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            msgError = "Lỗi tải dữ liệu: " + ex.Message;
+        }
+    }
+
+    // Hàm phụ để ignore lỗi từng catalog (tránh 1 cái lỗi làm chết cả trang)
+    private async Task LoadCatalog(Func<Task> action)
+    {
+        try { await action(); } catch { }
+    }
+
+    private async Task LoadList() => listGiaoVien = await GvService.LayDsGiaoVien();
+
+    private async Task Save()
+    {
+        msgError = null;
+        try
+        {
+            await GvService.ThemGiaoVien(gv);
+            gv = new GiaoVien(); // Reset form
+            await LoadList();
+        }
+        catch (Exception ex)
+        {
+            msgError = ex.Message;
+        }
+    }
+
+    private async Task Del(int id)
+    {
+        await GvService.XoaGiaoVien(id);
+        await LoadList();
+    }
+}

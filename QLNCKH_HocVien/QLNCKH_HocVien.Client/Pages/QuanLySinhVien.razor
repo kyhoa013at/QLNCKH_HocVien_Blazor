@@ -1,0 +1,449 @@
+﻿@page "/quanlysinhvien"
+@rendermode InteractiveServer
+@using QLNCKH_HocVien.Client.Models
+@using QLNCKH_HocVien.Client.Services
+@inject SinhVienService SvService
+@inject IJSRuntime JS
+
+<style>
+    /* Animation xuất hiện mượt mà */
+    .fade-in {
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    .slide-down {
+        animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    /* Hiệu ứng nảy nhẹ */
+    .zoom-in {
+        animation: zoomIn 0.3s ease-out;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes slideDown {
+        from {
+            transform: translateY(-30px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes zoomIn {
+        from {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    /* Hiệu ứng nút bấm (Quan trọng) */
+    .btn-animate {
+        transition: all 0.2s ease;
+    }
+
+        .btn-animate:hover {
+            transform: translateY(-2px); /* Nổi lên khi di chuột */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn-animate:active {
+            transform: scale(0.95); /* Nhún xuống khi bấm */
+            box-shadow: none;
+        }
+
+    /* Loading Overlay (Màn hình chờ nếu cần) */
+    .disabled-cursor {
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+</style>
+
+<h3 class="text-primary text-center fw-bold mb-4 fade-in" style="text-shadow: 1px 1px 2px #ddd;">QUẢN LÝ SINH VIÊN</h3>
+
+<div class="d-flex justify-content-between mb-3 fade-in">
+    <button class="btn btn-primary fw-bold shadow-sm btn-animate" @onclick="MoModalThem" disabled="@isLoading">
+        <i class="bi bi-plus-lg"></i> Thêm sinh viên
+    </button>
+    <div>
+        <button class="btn btn-outline-primary me-2 btn-animate"><i class="bi bi-file-earmark-arrow-up"></i> Nhập Excel</button>
+        <button class="btn btn-outline-success btn-animate"><i class="bi bi-file-earmark-excel"></i> Xuất Excel</button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(messageError))
+{
+    <div class="alert alert-danger alert-dismissible fade show slide-down shadow-sm" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @messageError
+        <button type="button" class="btn-close" @onclick="() => messageError = null"></button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(messageSuccess))
+{
+    <div class="alert alert-success alert-dismissible fade show slide-down shadow-sm" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @messageSuccess
+        <button type="button" class="btn-close" @onclick="() => messageSuccess = null"></button>
+    </div>
+}
+
+<div class="card shadow-sm border-0 fade-in">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+                <thead class="bg-light text-secondary text-center fw-bold">
+                    <tr>
+                        <th style="width: 50px;">STT</th>
+                        <th>MSV <i class="bi bi-sort-down"></i></th>
+                        <th>Họ và tên <i class="bi bi-sort-alpha-down"></i></th>
+                        <th>Ngày sinh</th>
+                        <th>Giới tính</th>
+                        <th>Lớp</th>
+                        <th>Ngành</th>
+                        <th>Quê quán</th>
+                        <th style="width: 180px;">Hành động</th>
+                    </tr>
+                    <tr class="bg-white">
+                        <td></td>
+                        <td><input class="form-control form-control-sm" placeholder="Tìm..." @bind="filterMaSV" @bind:event="oninput" /></td>
+                        <td><input class="form-control form-control-sm" placeholder="Tìm tên..." @bind="filterTen" @bind:event="oninput" /></td>
+                        <td></td>
+                        <td colspan="1">
+                            <select class="form-select form-select-sm" @bind="filterGioiTinh">
+                                <option value="">Tất cả</option>
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                            </select>
+                        </td>
+                        <td><input class="form-control form-control-sm" @bind="filterLop" @bind:event="oninput" /></td>
+                        <td></td>
+                        <td><input class="form-control form-control-sm" @bind="filterQueQuan" @bind:event="oninput" /></td>
+                        <td></td>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (DanhSachHienThi.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                @if (isLoading)
+                                {
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                }
+                                else
+                                {
+
+                                    <span>Không tìm thấy dữ liệu phù hợp</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        int stt = 1;
+                        @foreach (var sv in DanhSachHienThi)
+                        {
+                            <tr>
+                                <td class="text-center fw-bold text-muted">@(stt++)</td>
+                                <td class="text-center fw-bold text-primary">@sv.MaSV</td>
+                                <td>@sv.HoTen</td>
+                                <td class="text-center">@(sv.NgaySinh?.ToString("dd/MM/yyyy"))</td>
+                                <td class="text-center">
+                                    @if (sv.GioiTinh == "Nam")
+                                    {
+                                        <span class="badge bg-info text-dark">Nam</span>
+                                    }
+                                    else
+                                    {
+
+                                        <span class="badge bg-danger bg-opacity-75">Nữ</span>
+                                    }
+                                </td>
+                                <td class="text-center">@sv.Lop</td>
+                                <td>@(dsNganh.FirstOrDefault(n => n.IdLVNganh == sv.IdNganh)?.TenLVNganh)</td>
+                                <td>@(dsTinh.FirstOrDefault(t => t.IdTinh == sv.IdTinh)?.TenTinh)</td>
+                                <td class="text-center">
+                                    <button class="btn btn-warning btn-sm text-white me-1 shadow-sm btn-animate" title="Chi tiết">
+                                        <i class="bi bi-info-circle-fill"></i> Chi tiết
+                                    </button>
+
+                                    <button class="btn btn-danger btn-sm shadow-sm btn-animate"
+                                            @onclick="() => XoaSV(sv.Id)"
+                                            title="Xóa"
+                                            disabled="@isLoading">
+                                        @if (isLoading && idDeleting == sv.Id)
+                                        {
+                                            <span class="spinner-border spinner-border-sm"></span>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-trash-fill"></i> <span>Xóa</span>
+                                        }
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white d-flex justify-content-between py-2 align-items-center">
+        <small class="text-muted">Hiển thị @DanhSachHienThi.Count bản ghi</small>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item disabled"><a class="page-link" href="#">Trước</a></li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">Sau</a></li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+@if (showForm)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);">
+        <div class="modal-dialog modal-lg mt-20 zoom-in">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-person-lines-fill me-2"></i> THÊM SINH VIÊN MỚI</h5>
+                    <button type="button" class="btn-close btn-close-white btn-animate" @onclick="DongModal" disabled="@isLoading"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <EditForm Model="@sinhVienMoi" OnValidSubmit="XuLyLuu">
+                        <DataAnnotationsValidator />
+                        <div class="row g-3 bg-white p-3 rounded shadow-sm">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-secondary">Mã Sinh Viên (*)</label>
+                                <InputText @bind-Value="sinhVienMoi.MaSV" class="form-control" placeholder="Nhập mã..." />
+                                <ValidationMessage For="() => sinhVienMoi.MaSV" class="text-danger small" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-secondary">Họ và Tên (*)</label>
+                                <InputText @bind-Value="sinhVienMoi.HoTen" class="form-control" placeholder="Nhập họ tên..." />
+                                <ValidationMessage For="() => sinhVienMoi.HoTen" class="text-danger small" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-secondary">Ngày sinh</label>
+                                <InputDate @bind-Value="sinhVienMoi.NgaySinh" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-secondary">Giới tính</label>
+                                <InputSelect @bind-Value="sinhVienMoi.GioiTinh" class="form-select">
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary">Quê quán</label>
+                                <InputSelect @bind-Value="sinhVienMoi.IdTinh" class="form-select">
+                                    <option value="">-- Chọn --</option>
+                                    @foreach (var t in dsTinh)
+                                    {
+                                        <option value="@t.IdTinh">@t.TenTinh</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary">Ngành học</label>
+                                <InputSelect @bind-Value="sinhVienMoi.IdNganh" class="form-select">
+                                    <option value="">-- Chọn --</option>
+                                    @foreach (var n in dsNganh)
+                                    {
+                                        <option value="@n.IdLVNganh">@n.TenLVNganh</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary">Lớp</label>
+                                <InputText @bind-Value="sinhVienMoi.Lop" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary">Dân tộc</label>
+                                <InputSelect @bind-Value="sinhVienMoi.IdDanToc" class="form-select">
+                                    <option value="">-- Chọn --</option>
+                                    @foreach (var d in dsDanToc)
+                                    {
+                                        <option value="@d.IdDanToc">@d.TenDanToc</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary">Tôn giáo</label>
+                                <InputSelect @bind-Value="sinhVienMoi.IdTonGiao" class="form-select">
+                                    <option value="">-- Chọn --</option>
+                                    @foreach (var t in dsTonGiao)
+                                    {
+                                        <option value="@t.IdTonGiao">@t.TenTonGiao</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary">SĐT</label>
+                                <InputText @bind-Value="sinhVienMoi.SoDienThoai" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="mt-4 text-end border-top pt-3">
+                            <button type="button" class="btn btn-secondary me-2 btn-animate" @onclick="DongModal" disabled="@isLoading">
+                                <i class="bi bi-x-lg"></i> Hủy
+                            </button>
+
+                            <button type="submit" class="btn btn-success fw-bold px-4 shadow btn-animate" disabled="@isLoading">
+                                @if (isLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    <span>Đang xử lý...</span>
+                                }
+                                else
+                                {
+                                    <span><i class="bi bi-save"></i> Lưu Hồ Sơ</span>
+                                }
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // ... (Khai báo biến danh mục giữ nguyên) ...
+    private List<Tinh> dsTinh = new();
+    private List<DanToc> dsDanToc = new();
+    private List<TonGiao> dsTonGiao = new();
+    private List<ChucVu> dsChucVu = new();
+    private List<Nganh> dsNganh = new();
+
+    private List<SinhVien> dsSinhVienGoc = new();
+    private SinhVien sinhVienMoi = new SinhVien();
+    private bool showForm = false;
+
+    private string? messageError;
+    private string? messageSuccess;
+
+    // --- BIẾN MỚI: Kiểm soát trạng thái Loading ---
+    private bool isLoading = false;
+    private int? idDeleting = null; // ID đang được xóa để hiện spinner đúng chỗ
+    // -----------------------------------------------
+
+    private string filterMaSV = "";
+    private string filterTen = "";
+    private string filterGioiTinh = "";
+    private string filterLop = "";
+    private string filterQueQuan = "";
+
+    private List<SinhVien> DanhSachHienThi => dsSinhVienGoc.Where(x =>
+        (string.IsNullOrEmpty(filterMaSV) || x.MaSV.Contains(filterMaSV, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(filterTen) || x.HoTen.Contains(filterTen, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(filterGioiTinh) || x.GioiTinh == filterGioiTinh) &&
+        (string.IsNullOrEmpty(filterLop) || (x.Lop != null && x.Lop.Contains(filterLop, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(filterQueQuan) || (dsTinh.FirstOrDefault(t => t.IdTinh == x.IdTinh)?.TenTinh ?? "").Contains(filterQueQuan, StringComparison.OrdinalIgnoreCase)))
+    ).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 1. Load danh mục (Không cần loading spinner ở đây vì load ngầm)
+        var t1 = SvService.LayDsTinh();
+        var t2 = SvService.LayDsDanToc();
+        var t3 = SvService.LayDsTonGiao();
+        var t4 = SvService.LayDsChucVu();
+        var t5 = SvService.LayDsNganh();
+
+        await Task.WhenAll(t1, t2, t3, t4, t5);
+        dsTinh = t1.Result; dsDanToc = t2.Result; dsTonGiao = t3.Result;
+        dsChucVu = t4.Result; dsNganh = t5.Result;
+
+        await TaiLaiDanhSach();
+    }
+
+    private async Task TaiLaiDanhSach()
+    {
+        dsSinhVienGoc = await SvService.LayTatCaSinhVien();
+    }
+
+    private void MoModalThem()
+    {
+        sinhVienMoi = new SinhVien();
+        messageError = null; messageSuccess = null;
+        showForm = true;
+    }
+    private void DongModal() { if (!isLoading) showForm = false; }
+
+    private async Task XuLyLuu()
+    {
+        // BẮT ĐẦU LOADING
+        isLoading = true;
+        messageError = null; messageSuccess = null;
+        StateHasChanged(); // Cập nhật UI ngay để hiện spinner
+
+        try
+        {
+            // Giả lập độ trễ 1 chút để bạn kịp nhìn thấy hiệu ứng (Thực tế có thể bỏ dòng này)
+            await Task.Delay(500);
+
+            await SvService.ThemSinhVien(sinhVienMoi);
+            await TaiLaiDanhSach();
+
+            showForm = false;
+            messageSuccess = "Lưu hồ sơ thành công!";
+        }
+        catch (Exception ex)
+        {
+            messageError = "Lỗi: " + ex.Message;
+        }
+        finally
+        {
+            // KẾT THÚC LOADING (Dù thành công hay thất bại)
+            isLoading = false;
+        }
+    }
+
+    private async Task XoaSV(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa sinh viên này?")) return;
+
+        // BẮT ĐẦU XÓA
+        isLoading = true;
+        idDeleting = id; // Đánh dấu dòng đang xóa để hiện spinner
+        messageError = null; messageSuccess = null;
+        StateHasChanged();
+
+        try
+        {
+            await SvService.XoaSinhVien(id);
+            await TaiLaiDanhSach();
+            messageSuccess = "Đã xóa sinh viên thành công!";
+        }
+        catch (Exception ex)
+        {
+            messageError = "Lỗi xóa: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+            idDeleting = null;
+        }
+    }
+}
