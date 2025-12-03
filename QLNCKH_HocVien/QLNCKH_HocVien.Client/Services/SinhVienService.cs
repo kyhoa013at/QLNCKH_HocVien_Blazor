@@ -60,14 +60,25 @@ namespace QLNCKH_HocVien.Client.Services
 
         public async Task ThemSinhVien(SinhVien sv)
         {
-            // Gửi dữ liệu xuống Server để lưu vào SQL
-            var response = await _http.PostAsJsonAsync("api/SinhVien", sv);
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                // Đọc nội dung lỗi chi tiết từ Server gửi về
-                var errorContent = await response.Content.ReadAsStringAsync();
-                throw new Exception($"Lỗi API ({response.StatusCode}): {errorContent}");
+                var response = await _http.PostAsJsonAsync("api/SinhVien", sv);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new HttpRequestException($"Lỗi server ({response.StatusCode}): {errorContent}");
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                // Ném lại lỗi HTTP để UI xử lý
+                throw new Exception($"❌ Không thể kết nối tới server: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                // Lỗi khác (JSON parse, network...)
+                throw new Exception($"❌ Lỗi không xác định: {ex.Message}");
             }
         }
 
@@ -76,12 +87,12 @@ namespace QLNCKH_HocVien.Client.Services
             // Gửi lệnh xóa theo ID
             await _http.DeleteAsync($"api/SinhVien/{id}");
         }
-
-        // Thêm hàm này vào SinhVienService
         public async Task CapNhatSinhVien(SinhVien sv)
         {
             var response = await _http.PutAsJsonAsync($"api/SinhVien/{sv.Id}", sv);
             response.EnsureSuccessStatusCode();
         }
+        public string GetExportUrl() => "api/SinhVien/export";
+
     }
 }

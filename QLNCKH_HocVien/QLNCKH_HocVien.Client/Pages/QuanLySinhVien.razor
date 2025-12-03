@@ -85,7 +85,10 @@
     </button>
     <div>
         <button class="btn btn-outline-primary me-2 btn-animate"><i class="bi bi-file-earmark-arrow-up"></i> Nhập Excel</button>
-        <button class="btn btn-outline-success btn-animate"><i class="bi bi-file-earmark-excel"></i> Xuất Excel</button>
+        @* <button class="btn btn-outline-success btn-animate"><i class="bi bi-file-earmark-excel"></i> Xuất Excel</button> *@
+        <a href="@SvService.GetExportUrl()" class="btn btn-outline-success btn-animate" download>
+            <i class="bi bi-file-earmark-excel"></i> Xuất Excel
+        </a>
     </div>
 </div>
 

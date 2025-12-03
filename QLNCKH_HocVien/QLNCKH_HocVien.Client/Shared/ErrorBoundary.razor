@@ -1,0 +1,16 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+
+<CascadingValue Value="this">
+    @ChildContent
+</CascadingValue>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    public void HandleException(Exception ex)
+    {
+        // Log lỗi (sẽ implement ở Bước 6)
+        Console.Error.WriteLine($"❌ ERROR: {ex.Message}");
+        StateHasChanged();
+    }
+}

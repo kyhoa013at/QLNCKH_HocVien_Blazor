@@ -32,5 +32,9 @@ namespace QLNCKH_HocVien.Client.Services
             => await _http.GetFromJsonAsync<List<HoiDong>>("api/HoiDong") ?? new();
         public async Task<List<GiaoVien>> GetGiaoVien()
             => await _http.GetFromJsonAsync<List<GiaoVien>>("api/GiaoVien") ?? new();
+
+        // Lấy TẤT CẢ phiếu chấm - Performance tốt hơn
+        public async Task<List<PhieuCham>> GetAllPhieuCham()
+            => await _http.GetFromJsonAsync<List<PhieuCham>>("api/KetQua/phieucham-all") ?? new();
     }
 }

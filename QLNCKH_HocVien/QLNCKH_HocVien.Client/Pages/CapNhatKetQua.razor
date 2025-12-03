@@ -152,12 +152,15 @@ else
 
         // Load all phiếu chấm để tính điểm TB (cần tạo thêm API Get All PhieuCham nếu muốn nhanh)
         // Tạm thời ta dùng vòng lặp load (hơi chậm nếu nhiều data, nhưng ok cho demo)
-        dsPhieuChamAll.Clear();
-        foreach (var cd in dsChuyenDe)
-        {
-            var pcs = await KqService.GetPhieuCham(cd.Id);
-            dsPhieuChamAll.AddRange(pcs);
-        }
+        // dsPhieuChamAll.Clear();
+        // foreach (var cd in dsChuyenDe)
+        // {
+        //     var pcs = await KqService.GetPhieuCham(cd.Id);
+        //     dsPhieuChamAll.AddRange(pcs);
+        // }
+
+        // ✅ Load tất cả phiếu chấm 1 lần - Nhanh hơn nhiều
+        dsPhieuChamAll = await KqService.GetAllPhieuCham();
     }
 
     // --- LOGIC SƠ LOẠI ---

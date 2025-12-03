@@ -86,5 +86,11 @@ namespace QLNCKH_HocVien.Controllers
             await _context.SaveChangesAsync();
             return Ok();
         }
+        // --- API MỚI: Lấy TẤT CẢ phiếu chấm (tránh N+1 query) ---
+        [HttpGet("phieucham-all")]
+        public async Task<ActionResult<List<PhieuCham>>> GetAllPhieuCham()
+        {
+            return await _context.PhieuChams.ToListAsync();
+        }
     }
 }

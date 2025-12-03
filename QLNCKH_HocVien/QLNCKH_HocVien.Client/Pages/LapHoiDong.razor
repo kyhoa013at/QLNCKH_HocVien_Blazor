@@ -130,10 +130,9 @@
                                     @foreach(var tv in item.ThanhViens)
                                     {
                                     var gv = dsGiaoVien.FirstOrDefault(x => x.Id == tv.IdGiaoVien);
-                                    // --- SỬA LỖI Ở ĐÂY ---
                                     // Sử dụng IdDonViCongTac và danh sách ToChuc
-                                    var dv = dsToChuc.FirstOrDefault(d => d.Id == gv?.IdDonViCongTac)?.Ten ?? "";
-                                    var cv = dsChucVu.FirstOrDefault(c => c.IdChucVu == gv?.IdChucVu)?.TenChucVu ?? "";
+                                    var dv = dsToChuc?.FirstOrDefault(d => d.Id == gv?.IdDonViCongTac)?.Ten ?? "Chưa cập nhật";
+                                    var cv = dsChucVu?.FirstOrDefault(c => c.IdChucVu == gv?.IdChucVu)?.TenChucVu ?? "Chưa cập nhật";
 
                                     <li>
                                         @if(vongHienTai == VongCham.SoLoai)
