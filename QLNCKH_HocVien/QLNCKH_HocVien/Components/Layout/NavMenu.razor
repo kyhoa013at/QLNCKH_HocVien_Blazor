@@ -1,19 +1,50 @@
-﻿<MudNavMenu>
-    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Trang chủ</MudNavLink>
+﻿@* QLNCKH_HocVien/QLNCKH_HocVien/Components/Layout/NavMenu.razor *@
+@using Microsoft.AspNetCore.Components.Authorization
 
-    <MudNavGroup Title="Danh mục & Hồ sơ" Icon="@Icons.Material.Filled.Folder" Expanded="true">
-        <MudNavLink Href="quanlysinhvien" Icon="@Icons.Material.Filled.Person">Sinh viên</MudNavLink>
-        <MudNavLink Href="quanlygiaovien" Icon="@Icons.Material.Filled.School">Giáo viên</MudNavLink>
-    </MudNavGroup>
+<AuthorizeView>
+    <Authorized>
+        <MudNavMenu>
+            <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Trang chủ</MudNavLink>
 
-    <MudNavGroup Title="Quản lý Chuyên đề" Icon="@Icons.Material.Filled.Book" Expanded="true">
-        <MudNavLink Href="dangkychuyende" Icon="@Icons.Material.Filled.AppRegistration">Đăng ký CĐ</MudNavLink>
-        <MudNavLink Href="nopchuyende" Icon="@Icons.Material.Filled.UploadFile">Nộp sản phẩm</MudNavLink>
-    </MudNavGroup>
+            @* ✅ Admin và Giáo viên thấy menu Danh mục - Đặt tên Context khác *@
+            <AuthorizeView Roles="Admin,GiaoVien" Context="authDanhMuc">
+                <MudNavGroup Title="Danh mục & Hồ sơ" Icon="@Icons.Material.Filled.Folder" Expanded="true">
+                    <MudNavLink Href="quanlysinhvien" Icon="@Icons.Material.Filled.Person">Sinh viên</MudNavLink>
 
-    <MudNavGroup Title="Đánh giá & Xếp hạng" Icon="@Icons.Material.Filled.Grade" Expanded="true">
-        <MudNavLink Href="laphoidong" Icon="@Icons.Material.Filled.Groups">Lập Hội đồng</MudNavLink>
-        <MudNavLink Href="capnhatketqua" Icon="@Icons.Material.Filled.AssignmentTurnedIn">Chấm điểm</MudNavLink>
-        <MudNavLink Href="xepgiai" Icon="@Icons.Material.Filled.EmojiEvents">Xếp giải</MudNavLink>
-    </MudNavGroup>
-</MudNavMenu>
+                    @* ✅ Chỉ Admin thấy menu Giáo viên - Đặt tên Context khác *@
+                    <AuthorizeView Roles="Admin" Context="authGiaoVien">
+                        <MudNavLink Href="quanlygiaovien" Icon="@Icons.Material.Filled.School">Giáo viên</MudNavLink>
+                    </AuthorizeView>
+                </MudNavGroup>
+            </AuthorizeView>
+
+            @* ✅ Tất cả đều thấy menu Chuyên đề *@
+            <MudNavGroup Title="Quản lý Chuyên đề" Icon="@Icons.Material.Filled.Book" Expanded="true">
+                <MudNavLink Href="dangkychuyende" Icon="@Icons.Material.Filled.AppRegistration">Đăng ký CĐ</MudNavLink>
+
+                @* ✅ Sinh viên và Admin thấy menu Nộp sản phẩm *@
+                <AuthorizeView Roles="Admin,SinhVien" Context="authNop">
+                    <MudNavLink Href="nopchuyende" Icon="@Icons.Material.Filled.UploadFile">Nộp sản phẩm</MudNavLink>
+                </AuthorizeView>
+            </MudNavGroup>
+
+            @* ✅ Chỉ Admin và Giáo viên thấy menu Đánh giá *@
+            <AuthorizeView Roles="Admin,GiaoVien" Context="authDanhGia">
+                <MudNavGroup Title="Đánh giá & Xếp hạng" Icon="@Icons.Material.Filled.Grade" Expanded="true">
+                    <MudNavLink Href="laphoidong" Icon="@Icons.Material.Filled.Groups">Lập Hội đồng</MudNavLink>
+                    <MudNavLink Href="capnhatketqua" Icon="@Icons.Material.Filled.AssignmentTurnedIn">Chấm điểm</MudNavLink>
+
+                    @* ✅ Chỉ Admin xếp giải *@
+                    <AuthorizeView Roles="Admin" Context="authXepGiai">
+                        <MudNavLink Href="xepgiai" Icon="@Icons.Material.Filled.EmojiEvents">Xếp giải</MudNavLink>
+                    </AuthorizeView>
+                </MudNavGroup>
+            </AuthorizeView>
+
+            @* ✅ Tất cả đều xem được bảng xếp hạng *@
+            <MudNavLink Href="xepgiai" Icon="@Icons.Material.Filled.EmojiEvents">
+                Bảng xếp hạng
+            </MudNavLink>
+        </MudNavMenu>
+    </Authorized>
+</AuthorizeView>

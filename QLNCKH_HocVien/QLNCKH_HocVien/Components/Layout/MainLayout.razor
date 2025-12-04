@@ -1,30 +1,86 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@using QLNCKH_HocVien.Client.Services
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 
-<MudThemeProvider />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
+<CascadingAuthenticationState>
+    <MudThemeProvider />
+    <MudPopoverProvider />
+    <MudDialogProvider />
+    <MudSnackbarProvider />
 
-<MudLayout>
-    <MudAppBar Elevation="1" Color="Color.Primary">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        <MudText Typo="Typo.h6" Class="ml-3">HỆ THỐNG QUẢN LÝ NCKH</MudText>
-        <MudSpacer />
-        <MudIconButton Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" />
-    </MudAppBar>
+    <AuthorizeView>
+        <Authorized>
+            <MudLayout>
+                <MudAppBar Elevation="1" Color="Color.Primary">
+                    <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+                    <MudText Typo="Typo.h6" Class="ml-3">HỆ THỐNG QUẢN LÝ NCKH</MudText>
+                    <MudSpacer />
+                    
+                    @* ✅ Hiển thị thông tin user *@
+                    <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem>
+                            <div class="d-flex flex-column">
+                                <MudText Typo="Typo.body2"><strong>@context.User.Identity?.Name</strong></MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @(context.User.IsInRole("Admin") ? "Quản trị viên" : 
+                                      context.User.IsInRole("GiaoVien") ? "Giáo viên" : "Sinh viên")
+                                </MudText>
+                            </div>
+                        </MudMenuItem>
+                        <MudDivider />
+                        <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="HandleLogout">
+                            Đăng xuất
+                        </MudMenuItem>
+                    </MudMenu>
+                </MudAppBar>
 
-    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
-        <NavMenu />
-    </MudDrawer>
+                <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+                    <NavMenu />
+                </MudDrawer>
 
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-            @Body
-        </MudContainer>
-    </MudMainContent>
-</MudLayout>
+                <MudMainContent>
+                    <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+                        @Body
+                    </MudContainer>
+                </MudMainContent>
+            </MudLayout>
+        </Authorized>
+        <NotAuthorized>
+            @* ✅ Nếu chưa đăng nhập, redirect về trang login *@
+            <RedirectToLogin />
+        </NotAuthorized>
+    </AuthorizeView>
+</CascadingAuthenticationState>
 
 @code {
     bool _drawerOpen = true;
     void DrawerToggle() => _drawerOpen = !_drawerOpen;
+
+    private async Task HandleLogout()
+    {
+        await AuthService.Logout();
+        
+        if (AuthStateProvider is CustomAuthStateProvider customProvider)
+        {
+            customProvider.NotifyUserLogout();
+        }
+
+        Navigation.NavigateTo("/login", true);
+    }
+}
+
+@* Component helper để redirect *@
+@code {
+    public class RedirectToLogin : ComponentBase
+    {
+        [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+        protected override void OnInitialized()
+        {
+            Navigation.NavigateTo("/login", true);
+        }
+    }
 }

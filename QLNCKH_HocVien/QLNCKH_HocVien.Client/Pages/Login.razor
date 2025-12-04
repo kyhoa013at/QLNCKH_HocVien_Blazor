@@ -1,0 +1,123 @@
+﻿@page "/login"
+@using QLNCKH_HocVien.Client.Models
+@using QLNCKH_HocVien.Client.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-5">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3 class="mb-0"><i class="bi bi-shield-lock-fill me-2"></i>ĐĂNG NHẬP HỆ THỐNG</h3>
+                </div>
+                <div class="card-body p-4">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+                            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+                        </div>
+                    }
+
+                    <EditForm Model="@loginRequest" OnValidSubmit="HandleLogin">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-person-fill me-1"></i>Tên đăng nhập
+                            </label>
+                            <InputText @bind-Value="loginRequest.Username"
+                                       class="form-control form-control-lg"
+                                       placeholder="Nhập tên đăng nhập..." />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-key-fill me-1"></i>Mật khẩu
+                            </label>
+                            <InputText type="password"
+                                       @bind-Value="loginRequest.Password"
+                                       class="form-control form-control-lg"
+                                       placeholder="Nhập mật khẩu..." />
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary w-100 btn-lg mt-3"
+                                disabled="@isLoading">
+                            @if (isLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Đang đăng nhập...</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-box-arrow-in-right me-2"></i>
+                                <span>Đăng nhập</span>
+                            }
+                        </button>
+                    </EditForm>
+
+                    <hr class="my-4" />
+
+                    <div class="text-center">
+                        <p class="text-muted mb-2">Chưa có tài khoản?</p>
+                        <a href="/register" class="btn btn-outline-secondary">
+                            <i class="bi bi-person-plus-fill me-1"></i>Đăng ký ngay
+                        </a>
+                    </div>
+
+                    <div class="alert alert-info mt-4 mb-0" role="alert">
+                        <small>
+                            <strong>Tài khoản demo:</strong><br />
+                            Admin: <code>admin</code> / <code>Admin@123</code>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginRequest loginRequest = new();
+    private string? errorMessage;
+    private bool isLoading = false;
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var response = await AuthService.Login(loginRequest);
+
+            if (response.Success)
+            {
+                // Thông báo cho AuthStateProvider biết user đã đăng nhập
+                if (AuthStateProvider is CustomAuthStateProvider customProvider && response.Token != null)
+                {
+                    customProvider.NotifyUserAuthentication(response.Token);
+                }
+
+                // Redirect về trang chủ
+                Navigation.NavigateTo("/", true);
+            }
+            else
+            {
+                errorMessage = response.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Lỗi kết nối: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

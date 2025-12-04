@@ -1,0 +1,126 @@
+﻿@page "/register"
+@using QLNCKH_HocVien.Client.Models
+@using QLNCKH_HocVien.Client.Services
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="container">
+    <div class="row justify-content-center mt-4">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-header bg-success text-white text-center">
+                    <h3 class="mb-0"><i class="bi bi-person-plus-fill me-2"></i>ĐĂNG KÝ TÀI KHOẢN</h3>
+                </div>
+                <div class="card-body p-4">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle-fill me-2"></i>@successMessage
+                        </div>
+                    }
+
+                    <EditForm Model="@registerRequest" OnValidSubmit="HandleRegister">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Họ và Tên (*)</label>
+                            <InputText @bind-Value="registerRequest.HoTen" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tên đăng nhập (*)</label>
+                            <InputText @bind-Value="registerRequest.Username" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Email (*)</label>
+                            <InputText type="email" @bind-Value="registerRequest.Email" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Mật khẩu (*)</label>
+                            <InputText type="password" @bind-Value="registerRequest.Password" class="form-control" />
+                            <small class="text-muted">Tối thiểu 6 ký tự</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Vai trò (*)</label>
+                            <InputSelect @bind-Value="registerRequest.Role" class="form-select">
+                                <option value="SinhVien">Sinh viên</option>
+                                <option value="GiaoVien">Giáo viên</option>
+                                <option value="Admin">Quản trị viên</option>
+                            </InputSelect>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 btn-lg mt-3" disabled="@isLoading">
+                            @if (isLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Đang xử lý...</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-check-circle me-2"></i>
+                                <span>Đăng ký</span>
+                            }
+                        </button>
+                    </EditForm>
+
+                    <hr class="my-4" />
+
+                    <div class="text-center">
+                        <p class="text-muted mb-2">Đã có tài khoản?</p>
+                        <a href="/login" class="btn btn-outline-primary">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập ngay
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterRequest registerRequest = new();
+    private string? errorMessage;
+    private string? successMessage;
+    private bool isLoading = false;
+
+    private async Task HandleRegister()
+    {
+        isLoading = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var response = await AuthService.Register(registerRequest);
+
+            if (response.Success)
+            {
+                successMessage = "Đăng ký thành công! Đang chuyển về trang đăng nhập...";
+                await Task.Delay(2000);
+                Navigation.NavigateTo("/login", true);
+            }
+            else
+            {
+                errorMessage = response.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Lỗi: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
