@@ -3,4 +3,13 @@
         <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
+    <NotFound>
+        <PageTitle>404 - Not Found</PageTitle>
+        <LayoutView Layout="typeof(Layout.EmptyLayout)">
+            <div class="container text-center mt-5">
+                <h1 class="text-danger">404 - Không tìm thấy trang</h1>
+                <p><a href="/login">Quay về trang đăng nhập</a></p>
+            </div>
+        </LayoutView>
+    </NotFound>
 </Router>
